@@ -20,7 +20,8 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedTime = widget.initialAlarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
+    _selectedTime =
+        widget.initialAlarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
   }
 
   Future<void> _selectTime() async {
@@ -91,7 +92,9 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                             style: TextStyle(
                               fontSize: 72,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                           ),
                           Text(
@@ -99,7 +102,9 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                             style: TextStyle(
                               fontSize: 72,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                           ),
                           Text(
@@ -107,7 +112,9 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                             style: TextStyle(
                               fontSize: 72,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                           ),
                         ],
@@ -118,7 +125,10 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                       periodLabel,
                       style: TextStyle(
                         fontSize: 32,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimaryContainer
+                            .withOpacity(0.8),
                       ),
                     ),
                   ],
@@ -130,7 +140,8 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                 '点击时间可以修改',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const Spacer(),

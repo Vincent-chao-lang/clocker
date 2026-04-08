@@ -23,7 +23,8 @@ class AlarmService {
     await NotificationUtils.scheduleNotification(
       id: _notificationId,
       title: '⏰ 闹钟',
-      body: '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()} - ${alarm.label}',
+      body:
+          '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()} - ${alarm.label}',
       scheduledTime: nextAlarmTime,
     );
   }

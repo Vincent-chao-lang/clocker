@@ -169,7 +169,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 '选择时间设置闹钟',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
               const SizedBox(height: 32),
@@ -201,7 +202,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               '当前闹钟',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.7),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer
+                                    .withOpacity(0.7),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -210,7 +214,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                               ),
                             ),
                           ],
@@ -241,14 +247,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.alarm_off,
                         size: 32,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withOpacity(0.5),
                       ),
                       const SizedBox(width: 16),
                       Text(
                         '当前闹钟: 未设置',
                         style: TextStyle(
                           fontSize: 20,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -270,7 +282,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       final preset = presetTimes[index];
                       final alarm = Alarm(
                         id: index.toString(),
-                        time: TimeOfDay(hour: preset['hour'], minute: preset['minute']),
+                        time: TimeOfDay(
+                            hour: preset['hour'], minute: preset['minute']),
                         label: preset['label'],
                       );
                       final isActive = _currentAlarm != null &&
