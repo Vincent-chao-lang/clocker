@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:clocker/models/alarm.dart';
 import 'package:clocker/utils/notifications.dart';
@@ -29,8 +30,6 @@ class AlarmService {
 
   /// 设置闹钟
   Future<void> setAlarm(Alarm alarm) async {
-    final prefs = await SharedPreferences.getInstance();
-
     // 取消之前的通知
     await NotificationUtils.cancelNotification(_notificationId);
 

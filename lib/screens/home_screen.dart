@@ -3,7 +3,6 @@ import 'package:clocker/models/alarm.dart';
 import 'package:clocker/widgets/time_card.dart';
 import 'package:clocker/widgets/custom_time_button.dart';
 import 'package:clocker/screens/time_picker_screen.dart';
-import 'package:clocker/screens/confirmation_screen.dart';
 import 'package:clocker/services/alarm_service.dart';
 
 /// 主界面 - 时间卡片网格
