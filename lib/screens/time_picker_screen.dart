@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:clocker/models/alarm.dart';
 
 /// 时间选择器界面
 class TimePickerScreen extends StatefulWidget {
-  final Alarm? initialAlarm;
+  final TimeOfDay? initialTime;
 
   const TimePickerScreen({
     super.key,
-    this.initialAlarm,
+    this.initialTime,
   });
 
   @override
@@ -20,8 +19,7 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedTime =
-        widget.initialAlarm?.time ?? const TimeOfDay(hour: 7, minute: 0);
+    _selectedTime = widget.initialTime ?? const TimeOfDay(hour: 7, minute: 0);
   }
 
   Future<void> _selectTime() async {

@@ -36,7 +36,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadCurrentAlarm() async {
-    final alarm = await _alarmService.getCurrentAlarm();
+    // 获取或创建默认闹钟
+    final alarm = await _alarmService.getOrCreateDefaultAlarm();
     if (mounted) {
       setState(() {
         _currentAlarm = alarm;
@@ -47,20 +48,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onPresetTimeSelected(int index) async {
     final preset = presetTimes[index];
-    final alarm = Alarm(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      time: TimeOfDay(hour: preset['hour'], minute: preset['minute']),
-      label: preset['label'],
-    );
+    final newTime = TimeOfDay(hour: preset['hour'], minute: preset['minute']);
 
-    final confirmed = await Navigator.of(context).push<bool>(
+    // 直接更新默认闹钟的时间
+    await _alarmService.updateAlarmTime(newTime);
+    await _loadCurrentAlarm();
+    if (mounted) {
+      _showSuccessSnackBar();
+    }
+  }
+
+  Future<void> _onCustomTimeSelected() async {
+    final selectedTime = await Navigator.of(context).push<TimeOfDay>(
       MaterialPageRoute(
-        builder: (context) => ConfirmationScreen(alarm: alarm),
+        builder: (context) => TimePickerScreen(
+          initialTime: _currentAlarm?.time,
+        ),
       ),
     );
 
-    if (confirmed == true) {
-      await _alarmService.setAlarm(alarm);
+    if (selectedTime != null) {
+      // 更新默认闹钟的时间
+      await _alarmService.updateAlarmTime(selectedTime);
       await _loadCurrentAlarm();
       if (mounted) {
         _showSuccessSnackBar();
@@ -68,78 +77,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _onCustomTimeSelected() async {
-    final selectedTime = await Navigator.of(context).push<TimeOfDay>(
-      MaterialPageRoute(
-        builder: (context) => const TimePickerScreen(),
-      ),
-    );
-
-    if (selectedTime != null) {
-      final alarm = Alarm(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        time: selectedTime,
-        label: '自定义',
-      );
-
-      final confirmed = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (context) => ConfirmationScreen(alarm: alarm),
-        ),
-      );
-
-      if (confirmed == true) {
-        await _alarmService.setAlarm(alarm);
-        await _loadCurrentAlarm();
-        if (mounted) {
-          _showSuccessSnackBar();
-        }
-      }
-    }
-  }
-
-  Future<void> _onCancelAlarm() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('取消闹钟', style: TextStyle(fontSize: 22)),
-        content: const Text('确定要取消当前闹钟吗?', style: TextStyle(fontSize: 18)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消', style: TextStyle(fontSize: 20)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('确定', style: TextStyle(fontSize: 20)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _alarmService.cancelAlarm();
-      await _loadCurrentAlarm();
-      if (mounted) {
-        _showCancelSnackBar();
-      }
+  Future<void> _toggleAlarm(bool enabled) async {
+    await _alarmService.toggleAlarm(enabled);
+    await _loadCurrentAlarm();
+    if (mounted) {
+      _showToggleSnackBar(enabled);
     }
   }
 
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('闹钟设置成功', style: TextStyle(fontSize: 18)),
+        content: const Text('闹钟时间已更新', style: TextStyle(fontSize: 18)),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  void _showCancelSnackBar() {
+  void _showToggleSnackBar(bool enabled) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('闹钟已取消', style: TextStyle(fontSize: 18)),
+        content: Text(
+          enabled ? '闹钟已开启' : '闹钟已关闭',
+          style: const TextStyle(fontSize: 18),
+        ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -183,15 +145,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(20),
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
+                    color: _currentAlarm!.isEnabled
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.alarm,
+                        _currentAlarm!.isEnabled
+                            ? Icons.alarm
+                            : Icons.alarm_off,
                         size: 32,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _currentAlarm!.isEnabled
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withOpacity(0.5),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -202,10 +173,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               '当前闹钟',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer
-                                    .withOpacity(0.7),
+                                color: _currentAlarm!.isEnabled
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer
+                                        .withOpacity(0.7)
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withOpacity(0.7),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -214,54 +190,36 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onPrimaryContainer,
+                                color: _currentAlarm!.isEnabled
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                               ),
                             ),
+                            if (!_currentAlarm!.isEnabled)
+                              Text(
+                                '已关闭',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                      .withOpacity(0.6),
+                                ),
+                              ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: _onCancelAlarm,
-                        icon: Icon(
-                          Icons.cancel,
-                          size: 32,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.alarm_off,
-                        size: 32,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        '当前闹钟: 未设置',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant
-                              .withOpacity(0.7),
-                        ),
+                      // 闹钟开关
+                      Switch(
+                        value: _currentAlarm!.isEnabled,
+                        onChanged: (value) {
+                          _toggleAlarm(value);
+                        },
+                        activeColor: Theme.of(context).colorScheme.primary,
                       ),
                     ],
                   ),
