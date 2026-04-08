@@ -46,10 +46,8 @@ class NotificationUtils {
         '闹钟通知',
         description: '闹钟提醒通知,使用声音和震动',
         importance: Importance.max,
-        priority: Priority.high,
         enableVibration: true,
         playSound: true,
-        vibrationPattern: [0, 500, 200, 500, 200, 1000],
         showBadge: true,
       ));
     }
@@ -93,7 +91,7 @@ class NotificationUtils {
     required String body,
     required DateTime scheduledTime,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'alarm_channel',
       '闹钟通知',
       channelDescription: '闹钟提醒通知',
@@ -103,8 +101,7 @@ class NotificationUtils {
       category: AndroidNotificationCategory.alarm,
       playSound: true,
       enableVibration: true,
-      vibrationPattern: [0, 500, 200, 500, 200, 1000], // 震动模式
-      sound: RawResourceAndroidNotificationSound('notification'), // 使用默认通知音
+      sound: RawResourceAndroidNotificationSound('notification'),
       ongoing: false,
       autoCancel: true,
     );

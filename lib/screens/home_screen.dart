@@ -73,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onCustomTimeSelected() async {
     // 直接打开系统时间选择器
-    final now = TimeOfDay.now();
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 7, minute: 0),
