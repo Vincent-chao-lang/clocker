@@ -45,8 +45,8 @@ class AlarmService {
 
   /// 确保至少有一个默认闹钟（仅首次运行）
   Future<Alarm?> ensureDefaultAlarm() async {
-    final isFirstRun = await isFirstRun();
-    if (!isFirstRun) {
+    final firstRun = await isFirstRun();
+    if (!firstRun) {
       // 不是首次运行，不创建默认闹钟
       return null;
     }
