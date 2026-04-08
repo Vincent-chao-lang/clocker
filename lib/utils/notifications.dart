@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 /// 通知点击回调函数类型
 typedef NotificationTapCallback = void Function(NotificationResponse response);
@@ -138,14 +140,17 @@ class NotificationUtils {
         ? scheduledDate.add(const Duration(days: 1))
         : scheduledDate;
 
-    await _notificationsPlugin.schedule(
+    await _notificationsPlugin.zonedSchedule(
       id,
       title,
       body,
-      targetTime,
+      tz.TZDateTime.from(targetTime, tz.local),
       details,
-      payload: payload,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 

@@ -19,8 +19,8 @@ void main() async {
   NotificationUtils.setNotificationTapCallback((NotificationResponse response) {
     debugPrint('Notification tapped: ${response.payload}');
     // 当通知被点击时，导航到闹钟响铃界面
-    navigatorKey.currentState?.push(MaterialPage(
-      child: AlarmRingScreen(
+    navigatorKey.currentState?.push(MaterialPageRoute(
+      builder: (context) => AlarmRingScreen(
         alarmId: response.payload,
         notificationResponse: response,
       ),
