@@ -22,6 +22,7 @@ class NotificationUtils {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      requestProvisionalPermission: false,
     );
 
     const initSettings = InitializationSettings(
@@ -33,6 +34,25 @@ class NotificationUtils {
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
+
+    // 创建Android通知渠道
+    final androidPlugin =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin
+          .createNotificationChannel(const AndroidNotificationChannel(
+        'alarm_channel',
+        '闹钟通知',
+        description: '闹钟提醒通知,使用声音和震动',
+        importance: Importance.max,
+        priority: Priority.high,
+        enableVibration: true,
+        playSound: true,
+        vibrationPattern: [0, 500, 200, 500, 200, 1000],
+        showBadge: true,
+      ));
+    }
 
     _initialized = true;
   }
@@ -83,6 +103,10 @@ class NotificationUtils {
       category: AndroidNotificationCategory.alarm,
       playSound: true,
       enableVibration: true,
+      vibrationPattern: [0, 500, 200, 500, 200, 1000], // 震动模式
+      sound: RawResourceAndroidNotificationSound('notification'), // 使用默认通知音
+      ongoing: false,
+      autoCancel: true,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -90,6 +114,7 @@ class NotificationUtils {
       presentBadge: true,
       presentSound: true,
       sound: 'default',
+      badgeNumber: 1,
     );
 
     const details = NotificationDetails(
@@ -106,6 +131,7 @@ class NotificationUtils {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 

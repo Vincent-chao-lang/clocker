@@ -15,14 +15,8 @@ class AlarmService {
     final alarmsJson = prefs.getString(_alarmsKey);
 
     if (alarmsJson == null) {
-      // 首次使用,创建默认闹钟
-      final defaultAlarm = Alarm(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        time: const TimeOfDay(hour: 7, minute: 0),
-        label: '起床',
-        isEnabled: false,
-      );
-      return [defaultAlarm];
+      // 首次使用,返回空列表,由调用方决定是否创建默认闹钟
+      return [];
     }
 
     try {
@@ -34,6 +28,22 @@ class AlarmService {
       // 如果解析失败,返回空列表
       return [];
     }
+  }
+
+  /// 确保至少有一个默认闹钟
+  Future<Alarm> ensureDefaultAlarm() async {
+    final alarms = await getAlarms();
+    if (alarms.isEmpty) {
+      final defaultAlarm = Alarm(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        time: const TimeOfDay(hour: 7, minute: 0),
+        label: '起床',
+        isEnabled: false,
+      );
+      await addAlarm(defaultAlarm);
+      return defaultAlarm;
+    }
+    return alarms.first;
   }
 
   /// 添加闹钟
@@ -126,8 +136,9 @@ class AlarmService {
 
   /// 根据闹钟ID生成通知ID
   int _getNotificationId(String alarmId) {
-    // 使用闹钟ID的哈希值作为通知ID,确保每个闹钟有唯一的通知ID
-    return _baseNotificationId + alarmId.hashCode % 1000;
+    // 使用闹钟ID的哈希值绝对值,确保正数
+    // 每个闹钟有唯一的通知ID,支持最多10000个闹钟
+    return _baseNotificationId + alarmId.hashCode.abs() % 10000;
   }
 
   /// 检查是否有活动的闹钟

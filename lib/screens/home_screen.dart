@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:clocker/models/alarm.dart';
 import 'package:clocker/widgets/time_card.dart';
 import 'package:clocker/widgets/custom_time_button.dart';
-import 'package:clocker/screens/time_picker_screen.dart';
 import 'package:clocker/services/alarm_service.dart';
 
 /// 主界面 - 时间卡片网格
@@ -36,11 +35,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadAlarms() async {
     final alarms = await _alarmService.getAlarms();
-    if (mounted) {
-      setState(() {
-        _alarms = alarms;
-        _isLoading = false;
-      });
+    if (alarms.isEmpty) {
+      // 如果没有闹钟,创建默认闹钟
+      await _alarmService.ensureDefaultAlarm();
+      final newAlarms = await _alarmService.getAlarms();
+      if (mounted) {
+        setState(() {
+          _alarms = newAlarms;
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _alarms = alarms;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -61,10 +72,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onCustomTimeSelected() async {
-    final selectedTime = await Navigator.of(context).push<TimeOfDay>(
-      MaterialPageRoute(
-        builder: (context) => const TimePickerScreen(),
-      ),
+    // 直接打开系统时间选择器
+    final now = TimeOfDay.now();
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 7, minute: 0),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
 
     if (selectedTime != null) {
@@ -215,22 +233,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // 开关
-          Switch(
-            value: alarm.isEnabled,
-            onChanged: (value) {
-              _toggleAlarm(alarm.id, value);
-            },
-            activeColor: Theme.of(context).colorScheme.primary,
+          // 开关 - 使用SwitchListTile使整个区域可点击
+          Transform.scale(
+            scale: 1.3, // 放大开关
+            child: Switch(
+              value: alarm.isEnabled,
+              onChanged: (value) {
+                _toggleAlarm(alarm.id, value);
+              },
+              activeColor: Theme.of(context).colorScheme.primary,
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
           // 删除按钮
-          IconButton(
-            onPressed: () => _deleteAlarm(alarm.id),
-            icon: Icon(
-              Icons.delete_outline,
-              size: 28,
-              color: Theme.of(context).colorScheme.error,
+          GestureDetector(
+            onTap: () => _deleteAlarm(alarm.id),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                size: 28,
+                color: Theme.of(context).colorScheme.error,
+              ),
             ),
           ),
         ],
