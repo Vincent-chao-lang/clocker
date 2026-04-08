@@ -79,13 +79,21 @@ class AlarmService {
   /// 删除闹钟
   Future<void> deleteAlarm(String alarmId) async {
     final alarms = await getAlarms();
-    final alarm = alarms.firstWhere((a) => a.id == alarmId);
+
+    // 查找要删除的闹钟
+    final alarmIndex = alarms.indexWhere((a) => a.id == alarmId);
+    if (alarmIndex == -1) {
+      // 闹钟不存在,直接返回
+      return;
+    }
+
+    final alarm = alarms[alarmIndex];
 
     // 取消通知
     await _cancelAlarmNotification(alarm);
 
     // 从列表中移除
-    alarms.removeWhere((a) => a.id == alarmId);
+    alarms.removeAt(alarmIndex);
     await _saveAlarms(alarms);
   }
 
