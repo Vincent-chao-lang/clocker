@@ -16,7 +16,7 @@ void main() {
   });
 
   testWidgets('TimeOfDay model test', (WidgetTester tester) async {
-    // 测试TimeOfDay模型
+    // 测试Flutter内置的TimeOfDay模型
     final time1 = const TimeOfDay(hour: 7, minute: 0);
     final time2 = const TimeOfDay(hour: 7, minute: 0);
     final time3 = const TimeOfDay(hour: 8, minute: 0);
@@ -24,26 +24,4 @@ void main() {
     expect(time1 == time2, true);
     expect(time1 == time3, false);
   });
-}
-
-/// TimeOfDay类 (简单版本用于测试)
-class TimeOfDay {
-  final int hour;
-  final int minute;
-
-  const TimeOfDay({
-    required this.hour,
-    required this.minute,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TimeOfDay &&
-          runtimeType == other.runtimeType &&
-          hour == other.hour &&
-          minute == other.minute;
-
-  @override
-  int get hashCode => hour.hashCode ^ minute.hashCode;
 }

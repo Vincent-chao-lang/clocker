@@ -48,7 +48,7 @@ class NotificationUtils {
 
     if (androidPlugin != null) {
       final result = await androidPlugin.requestNotificationsPermission();
-      granted = granted && result;
+      granted = granted && (result ?? false);
     }
 
     if (iosPlugin != null) {
