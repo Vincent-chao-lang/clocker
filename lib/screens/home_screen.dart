@@ -30,28 +30,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAlarms();
+    _initAlarms();
+  }
+
+  Future<void> _initAlarms() async {
+    // 首次检查是否有闹钟,如果没有则创建默认闹钟
+    final alarms = await _alarmService.getAlarms();
+    if (alarms.isEmpty) {
+      await _alarmService.ensureDefaultAlarm();
+    }
+
+    await _loadAlarms();
   }
 
   Future<void> _loadAlarms() async {
     final alarms = await _alarmService.getAlarms();
-    if (alarms.isEmpty) {
-      // 如果没有闹钟,创建默认闹钟
-      await _alarmService.ensureDefaultAlarm();
-      final newAlarms = await _alarmService.getAlarms();
-      if (mounted) {
-        setState(() {
-          _alarms = newAlarms;
-          _isLoading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          _alarms = alarms;
-          _isLoading = false;
-        });
-      }
+
+    if (mounted) {
+      setState(() {
+        _alarms = alarms;
+        _isLoading = false;
+      });
     }
   }
 
@@ -112,16 +111,45 @@ class _HomeScreenState extends State<HomeScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('删除闹钟', style: TextStyle(fontSize: 22)),
-        content: const Text('确定要删除这个闹钟吗?', style: TextStyle(fontSize: 18)),
+        title: const Text('删除闹钟', style: TextStyle(fontSize: 24)),
+        content: const Text('确定要删除这个闹钟吗?', style: TextStyle(fontSize: 20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消', style: TextStyle(fontSize: 20)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除', style: TextStyle(fontSize: 20)),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    style: TextButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('取消', style: TextStyle(fontSize: 22)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('删除', style: TextStyle(fontSize: 22)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -232,7 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // 开关 - 使用SwitchListTile使整个区域可点击
+          const SizedBox(width: 8),
+          // 开关
           Transform.scale(
             scale: 1.3, // 放大开关
             child: Switch(
@@ -243,19 +272,20 @@ class _HomeScreenState extends State<HomeScreen> {
               activeColor: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
           // 删除按钮
-          GestureDetector(
+          InkWell(
             onTap: () => _deleteAlarm(alarm.id),
+            borderRadius: BorderRadius.circular(12),
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 Icons.delete_outline,
-                size: 28,
+                size: 26,
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
