@@ -107,11 +107,7 @@ class NotificationUtils {
       channelDescription: '闹钟提醒通知',
       importance: Importance.max,
       priority: Priority.high,
-      fullScreenIntent: true,
-      category: AndroidNotificationCategory.alarm,
       playSound: true,
-      enableVibration: true,
-      visibility: NotificationVisibility.public,
     );
 
     final iosDetails = DarwinNotificationDetails(
@@ -125,32 +121,16 @@ class NotificationUtils {
       iOS: iosDetails,
     );
 
-    // 计算延迟时间
-    final now = DateTime.now();
-    final scheduledDate = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      scheduledTime.hour,
-      scheduledTime.minute,
-    );
-
-    // 如果今天的时间已过，设置为明天
-    final targetTime = scheduledDate.isBefore(now)
-        ? scheduledDate.add(const Duration(days: 1))
-        : scheduledDate;
-
     await _notificationsPlugin.zonedSchedule(
       id,
       title,
       body,
-      tz.TZDateTime.from(targetTime, tz.local),
+      tz.TZDateTime.from(scheduledTime, tz.local),
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
-      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
