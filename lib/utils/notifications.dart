@@ -91,7 +91,7 @@ class NotificationUtils {
     required String body,
     required DateTime scheduledTime,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'alarm_channel',
       '闹钟通知',
       channelDescription: '闹钟提醒通知',
