@@ -6,105 +6,133 @@ import 'package:clocker/utils/notifications.dart';
 
 /// 闹钟服务
 class AlarmService {
-  static const String _alarmKey = 'default_alarm';
-  static const int _notificationId = 1001;
+  static const String _alarmsKey = 'alarms_list';
+  static const int _baseNotificationId = 1000;
 
-  /// 获取或创建默认闹钟
-  Future<Alarm> getOrCreateDefaultAlarm() async {
-    final alarm = await getCurrentAlarm();
-    if (alarm != null) {
-      return alarm;
+  /// 获取所有闹钟
+  Future<List<Alarm>> getAlarms() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alarmsJson = prefs.getString(_alarmsKey);
+
+    if (alarmsJson == null) {
+      // 首次使用,创建默认闹钟
+      final defaultAlarm = Alarm(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        time: const TimeOfDay(hour: 7, minute: 0),
+        label: '起床',
+        isEnabled: false,
+      );
+      return [defaultAlarm];
     }
 
-    // 创建默认闹钟:早上7点
-    final defaultAlarm = Alarm(
-      id: 'default_alarm',
-      time: const TimeOfDay(hour: 7, minute: 0),
-      label: '起床',
-      isEnabled: false, // 默认关闭
-    );
-
-    await _saveAlarm(defaultAlarm);
-    return defaultAlarm;
+    try {
+      final alarmsList = jsonDecode(alarmsJson) as List;
+      return alarmsList
+          .map((json) => Alarm.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      // 如果解析失败,返回空列表
+      return [];
+    }
   }
 
-  /// 设置闹钟
-  Future<void> setAlarm(Alarm alarm) async {
-    // 取消之前的通知
-    await NotificationUtils.cancelNotification(_notificationId);
-
-    // 保存闹钟信息
-    await _saveAlarm(alarm);
+  /// 添加闹钟
+  Future<void> addAlarm(Alarm alarm) async {
+    final alarms = await getAlarms();
+    alarms.add(alarm);
+    await _saveAlarms(alarms);
 
     // 如果闹钟启用,调度通知
     if (alarm.isEnabled) {
-      final nextAlarmTime = alarm.getNextAlarmTime();
-      await NotificationUtils.scheduleNotification(
-        id: _notificationId,
-        title: '⏰ 闹钟',
-        body:
-            '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()} - ${alarm.label}',
-        scheduledTime: nextAlarmTime,
-      );
+      await _scheduleAlarm(alarm);
     }
   }
 
-  /// 更新闹钟时间
-  Future<void> updateAlarmTime(TimeOfDay newTime) async {
-    final currentAlarm = await getCurrentAlarm();
-    if (currentAlarm == null) return;
+  /// 更新闹钟
+  Future<void> updateAlarm(Alarm alarm) async {
+    final alarms = await getAlarms();
+    final index = alarms.indexWhere((a) => a.id == alarm.id);
+    if (index != -1) {
+      // 取消旧通知
+      await _cancelAlarmNotification(alarm);
 
-    final updatedAlarm = currentAlarm.copyWith(
-      time: newTime,
-      isEnabled: true, // 修改时间时自动启用
+      alarms[index] = alarm;
+      await _saveAlarms(alarms);
+
+      // 如果闹钟启用,调度新通知
+      if (alarm.isEnabled) {
+        await _scheduleAlarm(alarm);
+      }
+    }
+  }
+
+  /// 删除闹钟
+  Future<void> deleteAlarm(String alarmId) async {
+    final alarms = await getAlarms();
+    final alarm = alarms.firstWhere((a) => a.id == alarmId);
+
+    // 取消通知
+    await _cancelAlarmNotification(alarm);
+
+    // 从列表中移除
+    alarms.removeWhere((a) => a.id == alarmId);
+    await _saveAlarms(alarms);
+  }
+
+  /// 切换闹钟开关状态
+  Future<void> toggleAlarm(String alarmId, bool enabled) async {
+    final alarms = await getAlarms();
+    final index = alarms.indexWhere((a) => a.id == alarmId);
+    if (index != -1) {
+      final alarm = alarms[index];
+      final updatedAlarm = alarm.copyWith(isEnabled: enabled);
+      alarms[index] = updatedAlarm;
+      await _saveAlarms(alarms);
+
+      if (enabled) {
+        await _scheduleAlarm(updatedAlarm);
+      } else {
+        await _cancelAlarmNotification(updatedAlarm);
+      }
+    }
+  }
+
+  /// 保存闹钟列表到本地
+  Future<void> _saveAlarms(List<Alarm> alarms) async {
+    final prefs = await SharedPreferences.getInstance();
+    final alarmsJson = jsonEncode(alarms.map((a) => a.toJson()).toList());
+    await prefs.setString(_alarmsKey, alarmsJson);
+  }
+
+  /// 调度闹钟通知
+  Future<void> _scheduleAlarm(Alarm alarm) async {
+    final notificationId = _getNotificationId(alarm.id);
+    final nextAlarmTime = alarm.getNextAlarmTime();
+
+    await NotificationUtils.scheduleNotification(
+      id: notificationId,
+      title: '⏰ 闹钟',
+      body:
+          '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()} - ${alarm.label}',
+      scheduledTime: nextAlarmTime,
     );
-
-    await setAlarm(updatedAlarm);
   }
 
-  /// 启用/关闭闹钟
-  Future<void> toggleAlarm(bool enabled) async {
-    final currentAlarm = await getCurrentAlarm();
-    if (currentAlarm == null) return;
-
-    final updatedAlarm = currentAlarm.copyWith(isEnabled: enabled);
-    await setAlarm(updatedAlarm);
+  /// 取消闹钟通知
+  Future<void> _cancelAlarmNotification(Alarm alarm) async {
+    final notificationId = _getNotificationId(alarm.id);
+    await NotificationUtils.cancelNotification(notificationId);
   }
 
-  /// 获取当前闹钟
-  Future<Alarm?> getCurrentAlarm() async {
-    final prefs = await SharedPreferences.getInstance();
-    final alarmJson = prefs.getString(_alarmKey);
-
-    if (alarmJson == null) return null;
-
-    try {
-      final alarmData = jsonDecode(alarmJson) as Map<String, dynamic>;
-      return Alarm.fromJson(alarmData);
-    } catch (e) {
-      // 如果解析失败,清除损坏的数据
-      await prefs.remove(_alarmKey);
-      return null;
-    }
-  }
-
-  /// 保存闹钟到本地
-  Future<void> _saveAlarm(Alarm alarm) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_alarmKey, jsonEncode(alarm.toJson()));
-  }
-
-  /// 取消闹钟通知(但不删除闹钟)
-  Future<void> cancelAlarmNotification() async {
-    await NotificationUtils.cancelNotification(_notificationId);
-
-    // 将闹钟设置为关闭状态
-    await toggleAlarm(false);
+  /// 根据闹钟ID生成通知ID
+  int _getNotificationId(String alarmId) {
+    // 使用闹钟ID的哈希值作为通知ID,确保每个闹钟有唯一的通知ID
+    return _baseNotificationId + alarmId.hashCode % 1000;
   }
 
   /// 检查是否有活动的闹钟
   Future<bool> hasActiveAlarm() async {
-    final alarm = await getCurrentAlarm();
-    return alarm != null && alarm.isEnabled;
+    final alarms = await getAlarms();
+    return alarms.any((alarm) => alarm.isEnabled);
   }
 }

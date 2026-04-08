@@ -15,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AlarmService _alarmService = AlarmService();
-  Alarm? _currentAlarm;
+  List<Alarm> _alarms = [];
   bool _isLoading = true;
 
   // 预设时间列表
@@ -31,15 +31,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCurrentAlarm();
+    _loadAlarms();
   }
 
-  Future<void> _loadCurrentAlarm() async {
-    // 获取或创建默认闹钟
-    final alarm = await _alarmService.getOrCreateDefaultAlarm();
+  Future<void> _loadAlarms() async {
+    final alarms = await _alarmService.getAlarms();
     if (mounted) {
       setState(() {
-        _currentAlarm = alarm;
+        _alarms = alarms;
         _isLoading = false;
       });
     }
@@ -47,11 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _onPresetTimeSelected(int index) async {
     final preset = presetTimes[index];
-    final newTime = TimeOfDay(hour: preset['hour'], minute: preset['minute']);
+    final newAlarm = Alarm(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      time: TimeOfDay(hour: preset['hour'], minute: preset['minute']),
+      label: preset['label'],
+      isEnabled: true,
+    );
 
-    // 直接更新默认闹钟的时间
-    await _alarmService.updateAlarmTime(newTime);
-    await _loadCurrentAlarm();
+    await _alarmService.addAlarm(newAlarm);
+    await _loadAlarms();
     if (mounted) {
       _showSuccessSnackBar();
     }
@@ -60,34 +63,66 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _onCustomTimeSelected() async {
     final selectedTime = await Navigator.of(context).push<TimeOfDay>(
       MaterialPageRoute(
-        builder: (context) => TimePickerScreen(
-          initialTime: _currentAlarm?.time,
-        ),
+        builder: (context) => const TimePickerScreen(),
       ),
     );
 
     if (selectedTime != null) {
-      // 更新默认闹钟的时间
-      await _alarmService.updateAlarmTime(selectedTime);
-      await _loadCurrentAlarm();
+      final newAlarm = Alarm(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        time: selectedTime,
+        label: '自定义',
+        isEnabled: true,
+      );
+
+      await _alarmService.addAlarm(newAlarm);
+      await _loadAlarms();
       if (mounted) {
         _showSuccessSnackBar();
       }
     }
   }
 
-  Future<void> _toggleAlarm(bool enabled) async {
-    await _alarmService.toggleAlarm(enabled);
-    await _loadCurrentAlarm();
+  Future<void> _toggleAlarm(String alarmId, bool enabled) async {
+    await _alarmService.toggleAlarm(alarmId, enabled);
+    await _loadAlarms();
     if (mounted) {
       _showToggleSnackBar(enabled);
+    }
+  }
+
+  Future<void> _deleteAlarm(String alarmId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除闹钟', style: TextStyle(fontSize: 22)),
+        content: const Text('确定要删除这个闹钟吗?', style: TextStyle(fontSize: 18)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消', style: TextStyle(fontSize: 20)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除', style: TextStyle(fontSize: 20)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _alarmService.deleteAlarm(alarmId);
+      await _loadAlarms();
+      if (mounted) {
+        _showDeleteSnackBar();
+      }
     }
   }
 
   void _showSuccessSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('闹钟时间已更新', style: TextStyle(fontSize: 18)),
+        content: const Text('闹钟已添加', style: TextStyle(fontSize: 18)),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -103,6 +138,102 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showDeleteSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('闹钟已删除', style: TextStyle(fontSize: 18)),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildAlarmItem(Alarm alarm) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: alarm.isEnabled
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            alarm.isEnabled ? Icons.alarm : Icons.alarm_off,
+            size: 32,
+            color: alarm.isEnabled
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context)
+                    .colorScheme
+                    .onSurfaceVariant
+                    .withOpacity(0.5),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alarm.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: (alarm.isEnabled
+                            ? Theme.of(context).colorScheme.onPrimaryContainer
+                            : Theme.of(context).colorScheme.onSurfaceVariant)
+                        .withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: alarm.isEnabled
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                if (!alarm.isEnabled)
+                  Text(
+                    '已关闭',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withOpacity(0.6),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // 开关
+          Switch(
+            value: alarm.isEnabled,
+            onChanged: (value) {
+              _toggleAlarm(alarm.id, value);
+            },
+            activeColor: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          // 删除按钮
+          IconButton(
+            onPressed: () => _deleteAlarm(alarm.id),
+            icon: Icon(
+              Icons.delete_outline,
+              size: 28,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -134,97 +265,95 @@ class _HomeScreenState extends State<HomeScreen> {
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
-              const SizedBox(height: 32),
-              // 当前闹钟状态
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else if (_currentAlarm != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  margin: const EdgeInsets.only(bottom: 24),
-                  decoration: BoxDecoration(
-                    color: _currentAlarm!.isEnabled
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 24),
+              // 闹钟列表标题
+              Row(
+                children: [
+                  const Text(
+                    '我的闹钟',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _currentAlarm!.isEnabled
-                            ? Icons.alarm
-                            : Icons.alarm_off,
-                        size: 32,
-                        color: _currentAlarm!.isEnabled
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context)
+                  const Spacer(),
+                  Text(
+                    '${_alarms.where((a) => a.isEnabled).length}/${_alarms.length} 已开启',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // 闹钟列表
+              if (_isLoading)
+                const Expanded(
+                    child: Center(child: CircularProgressIndicator()))
+              else if (_alarms.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.alarm_off,
+                          size: 64,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant
+                              .withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '暂无闹钟',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '点击下方卡片添加闹钟',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context)
                                 .colorScheme
                                 .onSurfaceVariant
                                 .withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '当前闹钟',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _currentAlarm!.isEnabled
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                        .withOpacity(0.7)
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant
-                                        .withOpacity(0.7),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_currentAlarm!.getPeriodLabel()} ${_currentAlarm!.getFormattedTime()}',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: _currentAlarm!.isEnabled
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                              ),
-                            ),
-                            if (!_currentAlarm!.isEnabled)
-                              Text(
-                                '已关闭',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant
-                                      .withOpacity(0.6),
-                                ),
-                              ),
-                          ],
+                          ),
                         ),
-                      ),
-                      // 闹钟开关
-                      Switch(
-                        value: _currentAlarm!.isEnabled,
-                        onChanged: (value) {
-                          _toggleAlarm(value);
-                        },
-                        activeColor: Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: List.generate(
+                      _alarms.length,
+                      (index) => _buildAlarmItem(_alarms[index]),
+                    ),
                   ),
                 ),
+              const SizedBox(height: 24),
+              // 分隔线
+              const Divider(height: 1),
+              const SizedBox(height: 24),
+              // 快速添加标题
+              const Text(
+                '快速添加',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
               // 时间卡片网格
-              Expanded(
+              SizedBox(
+                height: 160,
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -232,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSpacing: 16,
                     childAspectRatio: 160 / 140,
                   ),
-                  itemCount: presetTimes.length + 1, // 预设时间 + 自定义按钮
+                  itemCount: presetTimes.length + 1,
                   itemBuilder: (context, index) {
                     if (index < presetTimes.length) {
                       // 预设时间卡片
@@ -243,13 +372,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             hour: preset['hour'], minute: preset['minute']),
                         label: preset['label'],
                       );
-                      final isActive = _currentAlarm != null &&
-                          _currentAlarm!.time.hour == alarm.time.hour &&
-                          _currentAlarm!.time.minute == alarm.time.minute;
 
                       return TimeCard(
                         alarm: alarm,
-                        isActive: isActive,
+                        isActive: false,
                         onTap: () => _onPresetTimeSelected(index),
                       );
                     } else {
@@ -261,6 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
