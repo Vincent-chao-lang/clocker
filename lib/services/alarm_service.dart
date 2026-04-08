@@ -155,6 +155,7 @@ class AlarmService {
       body:
           '${alarm.getPeriodLabel()} ${alarm.getFormattedTime()} - ${alarm.label}',
       scheduledTime: nextAlarmTime,
+      payload: alarm.id,
     );
   }
 

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:clocker/screens/home_screen.dart';
+import 'package:clocker/screens/alarm_ring_screen.dart';
 import 'package:clocker/utils/notifications.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,6 +14,18 @@ void main() async {
 
   // 请求通知权限
   await NotificationUtils.requestPermissions();
+
+  // 设置通知点击处理
+  NotificationUtils.setNotificationTapCallback((NotificationResponse response) {
+    debugPrint('Notification tapped: ${response.payload}');
+    // 当通知被点击时，导航到闹钟响铃界面
+    navigatorKey.currentState?.push(MaterialPage(
+      child: AlarmRingScreen(
+        alarmId: response.payload,
+        notificationResponse: response,
+      ),
+    ));
+  });
 
   runApp(const ClockerApp());
 }
@@ -21,6 +37,7 @@ class ClockerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Clocker',
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz_data;
+
+/// 通知点击回调函数类型
+typedef NotificationTapCallback = void Function(NotificationResponse response);
 
 /// 通知工具类
 class NotificationUtils {
@@ -9,6 +10,12 @@ class NotificationUtils {
       FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
+  static NotificationTapCallback? _onNotificationTapCallback;
+
+  /// 设置通知点击回调
+  static void setNotificationTapCallback(NotificationTapCallback callback) {
+    _onNotificationTapCallback = callback;
+  }
 
   /// 初始化通知
   static Future<void> initialize() async {
@@ -90,8 +97,9 @@ class NotificationUtils {
     required String title,
     required String body,
     required DateTime scheduledTime,
+    String? payload,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'alarm_channel',
       '闹钟通知',
       channelDescription: '闹钟提醒通知',
@@ -101,32 +109,43 @@ class NotificationUtils {
       category: AndroidNotificationCategory.alarm,
       playSound: true,
       enableVibration: true,
-      ongoing: false,
-      autoCancel: true,
+      visibility: NotificationVisibility.public,
     );
 
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: 'default',
-      badgeNumber: 1,
     );
 
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
-    await _notificationsPlugin.zonedSchedule(
+    // 计算延迟时间
+    final now = DateTime.now();
+    final scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      scheduledTime.hour,
+      scheduledTime.minute,
+    );
+
+    // 如果今天的时间已过，设置为明天
+    final targetTime = scheduledDate.isBefore(now)
+        ? scheduledDate.add(const Duration(days: 1))
+        : scheduledDate;
+
+    await _notificationsPlugin.schedule(
       id,
       title,
       body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
+      targetTime,
       details,
+      payload: payload,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -142,8 +161,9 @@ class NotificationUtils {
 
   /// 处理通知点击
   static void _onNotificationTap(NotificationResponse response) {
-    // 可以在这里处理通知点击后的逻辑
     debugPrint('Notification tapped: ${response.payload}');
+    // 调用外部设置的回调函数
+    _onNotificationTapCallback?.call(response);
   }
 
   /// 获取待发送的通知
