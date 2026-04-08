@@ -34,12 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _initAlarms() async {
-    // 首次检查是否有闹钟,如果没有则创建默认闹钟
-    final alarms = await _alarmService.getAlarms();
-    if (alarms.isEmpty) {
-      await _alarmService.ensureDefaultAlarm();
-    }
-
+    // 首次运行时创建默认闹钟
+    await _alarmService.ensureDefaultAlarm();
     await _loadAlarms();
   }
 

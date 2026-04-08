@@ -101,7 +101,6 @@ class NotificationUtils {
       category: AndroidNotificationCategory.alarm,
       playSound: true,
       enableVibration: true,
-      sound: RawResourceAndroidNotificationSound('notification'),
       ongoing: false,
       autoCancel: true,
     );

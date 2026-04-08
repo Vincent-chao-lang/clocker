@@ -7,6 +7,7 @@ import 'package:clocker/utils/notifications.dart';
 /// 闹钟服务
 class AlarmService {
   static const String _alarmsKey = 'alarms_list';
+  static const String _firstRunKey = 'first_run';
   static const int _baseNotificationId = 1000;
 
   /// 获取所有闹钟
@@ -30,8 +31,26 @@ class AlarmService {
     }
   }
 
-  /// 确保至少有一个默认闹钟
-  Future<Alarm> ensureDefaultAlarm() async {
+  /// 检查是否是首次运行
+  Future<bool> isFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_firstRunKey) ?? true;
+  }
+
+  /// 标记首次运行已完成
+  Future<void> setFirstRunComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstRunKey, false);
+  }
+
+  /// 确保至少有一个默认闹钟（仅首次运行）
+  Future<Alarm?> ensureDefaultAlarm() async {
+    final isFirstRun = await isFirstRun();
+    if (!isFirstRun) {
+      // 不是首次运行，不创建默认闹钟
+      return null;
+    }
+
     final alarms = await getAlarms();
     if (alarms.isEmpty) {
       final defaultAlarm = Alarm(
@@ -41,8 +60,11 @@ class AlarmService {
         isEnabled: false,
       );
       await addAlarm(defaultAlarm);
+      await setFirstRunComplete();
       return defaultAlarm;
     }
+    // 已有闹钟，标记首次运行完成
+    await setFirstRunComplete();
     return alarms.first;
   }
 
