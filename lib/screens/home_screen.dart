@@ -55,39 +55,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onPresetTimeSelected(int index) async {
-    final preset = presetTimes[index];
-    final newAlarm = Alarm(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      time: TimeOfDay(hour: preset['hour'], minute: preset['minute']),
-      label: preset['label'],
-      isEnabled: true,
-    );
-
-    await _alarmService.addAlarm(newAlarm);
-    await _loadAlarms();
-    if (mounted) {
-      _showSuccessSnackBar();
-    }
-  }
-
-  Future<void> _onCustomTimeSelected() async {
-    // 直接打开系统时间选择器
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 7, minute: 0),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child ?? const SizedBox(),
-        );
-      },
-    );
-
-    if (selectedTime != null) {
+    try {
+      final preset = presetTimes[index];
       final newAlarm = Alarm(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        time: selectedTime,
-        label: '自定义',
+        time: TimeOfDay(hour: preset['hour'], minute: preset['minute']),
+        label: preset['label'],
         isEnabled: true,
       );
 
@@ -95,6 +68,63 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadAlarms();
       if (mounted) {
         _showSuccessSnackBar();
+      }
+    } catch (e) {
+      debugPrint('Error adding alarm: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('添加失败: $e', style: TextStyle(fontSize: 18)),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onCustomTimeSelected() async {
+    try {
+      // 直接打开系统时间选择器
+      final selectedTime = await showTimePicker(
+        context: context,
+        initialTime: const TimeOfDay(hour: 7, minute: 0),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child ?? const SizedBox(),
+          );
+        },
+      );
+
+      debugPrint('Selected time: $selectedTime');
+
+      if (selectedTime != null) {
+        final newAlarm = Alarm(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          time: selectedTime,
+          label: '自定义',
+          isEnabled: true,
+        );
+
+        debugPrint(
+            'Adding alarm: ${newAlarm.id}, ${newAlarm.getFormattedTime()}');
+        await _alarmService.addAlarm(newAlarm);
+        await _loadAlarms();
+        if (mounted) {
+          _showSuccessSnackBar();
+        }
+      } else {
+        debugPrint('No time selected');
+      }
+    } catch (e) {
+      debugPrint('Error in custom time selection: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('选择时间失败: $e', style: TextStyle(fontSize: 18)),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }
@@ -410,8 +440,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               // 时间卡片网格
               SizedBox(
-                height: 160,
+                height: 150,
                 child: GridView.builder(
+                  padding: EdgeInsets.zero,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
@@ -433,12 +464,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       return TimeCard(
                         alarm: alarm,
                         isActive: false,
-                        onTap: () => _onPresetTimeSelected(index),
+                        onTap: () {
+                          debugPrint('Tapped preset card: $index');
+                          _onPresetTimeSelected(index);
+                        },
                       );
                     } else {
                       // 自定义时间按钮
                       return CustomTimeButton(
-                        onTap: _onCustomTimeSelected,
+                        onTap: () {
+                          debugPrint('Tapped custom time button');
+                          _onCustomTimeSelected();
+                        },
                       );
                     }
                   },
