@@ -77,10 +77,8 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                 '闹钟响了！',
                 style: TextStyle(
                   fontSize: 36,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.8),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                 ),
               ),
               const Spacer(),
@@ -113,7 +111,8 @@ class _AlarmRingScreenState extends State<AlarmRingScreen> {
                                 '贪睡',
                                 style: TextStyle(
                                   fontSize: 24,
-                                  color: Theme.of(context).colorScheme.onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                             ],
