@@ -23,14 +23,14 @@ android {
             // 优先从环境变量读取（用于 CI/CD），否则从 keystore.properties 读取
             val keystorePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties?.getProperty("keystoreFile")
             val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties?.getProperty("keystorePassword")
-            val keyAlias = System.getenv("KEY_ALIAS") ?: keystoreProperties?.getProperty("keyAlias")
-            val keyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProperties?.getProperty("keyPassword")
+            val keyAliasValue = System.getenv("KEY_ALIAS") ?: keystoreProperties?.getProperty("keyAlias")
+            val keyPasswordValue = System.getenv("KEY_PASSWORD") ?: keystoreProperties?.getProperty("keyPassword")
 
-            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+            if (keystorePath != null && keystorePassword != null && keyAliasValue != null && keyPasswordValue != null) {
                 storeFile = file(keystorePath)
                 storePassword = keystorePassword
-                keyAlias = keyAlias
-                keyPassword = keyPassword
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
             }
         }
     }
