@@ -1,6 +1,7 @@
 package com.clocker.clocker.ui
 
 import android.animation.ObjectAnimator
+import android.app.AlertDialog
 import android.media.AudioAttributes
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.clocker.clocker.AlarmScheduler
 import com.clocker.clocker.R
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -31,12 +33,22 @@ class AlarmRingActivity : AppCompatActivity() {
     private lateinit var scheduler: AlarmScheduler
     private var ringtone: Ringtone? = null
     private var timer: CountDownTimer? = null
+    private var alarmId: String? = null
+    private var alarmLabel: String? = null
+    private var alarmHour: Int = 0
+    private var alarmMinute: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_alarm_ring)
 
         scheduler = AlarmScheduler(this)
+
+        // 获取闹钟信息
+        alarmId = intent.getStringExtra("alarm_id")
+        alarmLabel = intent.getStringExtra("alarm_label") ?: "闹钟"
+        alarmHour = intent.getIntExtra("alarm_hour", 7)
+        alarmMinute = intent.getIntExtra("alarm_minute", 0)
 
         initViews()
         startAlarmAnimation()
@@ -50,15 +62,14 @@ class AlarmRingActivity : AppCompatActivity() {
         stopButton = findViewById(R.id.btn_stop)
         snoozeButton = findViewById(R.id.btn_snooze)
 
-        val label = intent.getStringExtra("alarm_label") ?: "闹钟"
-        findViewById<TextView>(R.id.message_text).text = label
+        findViewById<TextView>(R.id.message_text).text = alarmLabel
 
         stopButton.setOnClickListener {
-            stopAlarm()
+            showStopConfirmDialog()
         }
 
         snoozeButton.setOnClickListener {
-            snoozeAlarm()
+            snoozeFor5Minutes()
         }
 
         updateTime()
@@ -123,6 +134,55 @@ class AlarmRingActivity : AppCompatActivity() {
         timeText.text = currentTime
     }
 
+    private fun showStopConfirmDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.confirm_schedule_tomorrow))
+            .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                scheduleForTomorrow()
+            }
+            .setNegativeButton(getString(R.string.no)) { _, _ ->
+                stopAlarm()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun scheduleForTomorrow() {
+        ringtone?.stop()
+        timer?.cancel()
+        scheduler.cancelAlarmNotification()
+
+        // 调度为明天同一时间
+        alarmId?.let { id ->
+            scheduler.scheduleForTomorrow(id, alarmLabel, alarmHour, alarmMinute)
+        }
+
+        showToast(getString(R.string.scheduled_for_tomorrow))
+        finish()
+    }
+
+    private fun snoozeFor5Minutes() {
+        ringtone?.stop()
+        timer?.cancel()
+        scheduler.cancelAlarmNotification()
+
+        // 调度5分钟后的闹钟
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.MINUTE, 5)
+
+        alarmId?.let { id ->
+            scheduler.scheduleOneTime(
+                id,
+                alarmLabel ?: "闹钟",
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE)
+            )
+        }
+
+        showToast(getString(R.string.snoozed_for_5min))
+        finish()
+    }
+
     private fun stopAlarm() {
         ringtone?.stop()
         timer?.cancel()
@@ -130,15 +190,8 @@ class AlarmRingActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun snoozeAlarm() {
-        // 贪睡 5 分钟
-        ringtone?.stop()
-        timer?.cancel()
-        scheduler.cancelAlarmNotification()
-
-        // TODO: 实现贪睡逻辑
-
-        finish()
+    private fun showToast(message: String) {
+        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {
@@ -149,6 +202,6 @@ class AlarmRingActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         // 防止返回键关闭响铃界面
-        // 必须点击停止按钮
+        // 必须点击停止或等会按钮
     }
 }
