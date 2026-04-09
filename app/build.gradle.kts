@@ -4,13 +4,13 @@ plugins {
 }
 
 // 读取签名配置
+import java.util.Properties
+import java.io.FileInputStream
+
+val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = if (keystorePropertiesFile.exists()) {
-    java.util.Properties().apply {
-        load(keystorePropertiesFile.inputStream())
-    }
-} else {
-    null
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -21,10 +21,10 @@ android {
     signingConfigs {
         create("release") {
             // 优先从环境变量读取（用于 CI/CD），否则从 keystore.properties 读取
-            val keystorePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties?.getProperty("keystoreFile")
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties?.getProperty("keystorePassword")
-            val keyAliasValue = System.getenv("KEY_ALIAS") ?: keystoreProperties?.getProperty("keyAlias")
-            val keyPasswordValue = System.getenv("KEY_PASSWORD") ?: keystoreProperties?.getProperty("keyPassword")
+            val keystorePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties["keystoreFile"] as String?
+            val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties["keystorePassword"] as String?
+            val keyAliasValue = System.getenv("KEY_ALIAS") ?: keystoreProperties["keyAlias"] as String?
+            val keyPasswordValue = System.getenv("KEY_PASSWORD") ?: keystoreProperties["keyPassword"] as String?
 
             if (keystorePath != null && keystorePassword != null && keyAliasValue != null && keyPasswordValue != null) {
                 storeFile = file(keystorePath)
