@@ -30,11 +30,21 @@ jobs:
       - name: Build Android APK
         run: gradle assembleDebug
 
+      - name: Build Android AAB
+        run: gradle bundleDebug
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-debug
+          name: android-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload Android AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-aab
+          path: app/build/outputs/bundle/debug/app-debug.aab
           retention-days: 30
 
   release:
@@ -53,8 +63,14 @@ jobs:
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
-          name: android-debug
+          name: android-debug-apk
           path: ./apk
+
+      - name: Download AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: android-debug-aab
+          path: ./aab
 
       - name: Generate version tag
         id: version
@@ -86,18 +102,28 @@ jobs:
             - **老年人友好**: 大字体、高对比度、大按钮
 
             ### 下载
-            - **Android APK**: 从下方 Assets 下载 `app-debug.apk`
+            - **Android APK**: 从下方 Assets 下载 `app-debug.apk`（直接安装）
+            - **Android AAB**: 从下方 Assets 下载 `app-debug.aab`（用于 Google Play）
 
             ### 安装说明
-            1. 下载 APK 文件
+            **APK 安装:**
+            1. 下载 `app-debug.apk` 文件
             2. 在 Android 设备上安装
             3. 授予闹钟权限
             4. 开始使用!
 
+            **AAB 上架 Google Play:**
+            1. 下载 `app-debug.aab` 文件
+            2. 在 Google Play Console 创建应用
+            3. 上传 AAB 文件
+            4. 填写应用信息并提交审核
+
             ---
             构建信息: ${{ github.sha }}
             构建时间: $(date +'%Y-%m-%d %H:%M:%S')
-          files: ./apk/app-debug.apk
+          files: |
+            ./apk/app-debug.apk
+            ./aab/app-debug.aab
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
