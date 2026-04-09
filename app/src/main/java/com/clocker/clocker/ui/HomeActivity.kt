@@ -155,7 +155,7 @@ class HomeActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                bottomMargin = dp(16)
+                bottomMargin = dp(12)
             }
             weightSum = 2f
         }
@@ -167,7 +167,7 @@ class HomeActivity : AppCompatActivity() {
         val card = layoutInflater.inflate(R.layout.item_time_card, null) as CardView
         card.layoutParams = LinearLayout.LayoutParams(
             0,
-            dp(140),
+            dp(100),
             1f
         ).apply {
             rightMargin = dp(8)

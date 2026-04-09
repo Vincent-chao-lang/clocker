@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Clocker</string>
-    <string name="title">Clocker</string>
+    <string name="app_name">极简闹钟</string>
+    <string name="title">极简闹钟</string>
     <string name="subtitle">选择时间设置闹钟</string>
     <string name="my_alarms">我的闹钟</string>
     <string name="quick_add">快速添加</string>
