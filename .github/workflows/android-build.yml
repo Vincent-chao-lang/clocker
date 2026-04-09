@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-android:
-    name: Build Android
+  build-debug:
+    name: Build Debug
     runs-on: ubuntu-latest
 
     steps:
@@ -47,9 +47,64 @@ jobs:
           path: app/build/outputs/bundle/debug/app-debug.aab
           retention-days: 30
 
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+    # 只在有签名 Secrets 的情况下构建 Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 8.4
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/clocker-release.keystore
+
+      - name: Build Release APK
+        run: gradle assembleRelease
+        env:
+          KEYSTORE_FILE: app/clocker-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Build Release AAB
+        run: gradle bundleRelease
+        env:
+          KEYSTORE_FILE: app/clocker-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
   release:
     name: Create Release
-    needs: build-android
+    needs: [build-debug, build-release]
     # 只在main分支的push事件中创建Release
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -60,17 +115,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download APK
+      - name: Download Debug APK
         uses: actions/download-artifact@v4
         with:
           name: android-debug-apk
-          path: ./apk
+          path: ./debug-apk
 
-      - name: Download AAB
+      - name: Download Debug AAB
         uses: actions/download-artifact@v4
         with:
           name: android-debug-aab
-          path: ./aab
+          path: ./debug-aab
+
+      - name: Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-apk
+          path: ./release-apk
+
+      - name: Download Release AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-aab
+          path: ./release-aab
 
       - name: Generate version tag
         id: version
@@ -102,18 +169,22 @@ jobs:
             - **老年人友好**: 大字体、高对比度、大按钮
 
             ### 下载
-            - **Android APK**: 从下方 Assets 下载 `app-debug.apk`（直接安装）
-            - **Android AAB**: 从下方 Assets 下载 `app-debug.aab`（用于 Google Play）
+            | 文件 | 说明 |
+            |------|------|
+            | `app-debug.apk` | Debug 版本（直接安装） |
+            | `app-debug.aab` | Debug 版本（用于测试） |
+            | `app-release.apk` | **Release 版本（推荐安装）** |
+            | `app-release.aab` | **Release 版本（用于 Google Play）** |
 
             ### 安装说明
             **APK 安装:**
-            1. 下载 `app-debug.apk` 文件
+            1. 下载 `app-release.apk` 文件
             2. 在 Android 设备上安装
             3. 授予闹钟权限
             4. 开始使用!
 
             **AAB 上架 Google Play:**
-            1. 下载 `app-debug.aab` 文件
+            1. 下载 `app-release.aab` 文件
             2. 在 Google Play Console 创建应用
             3. 上传 AAB 文件
             4. 填写应用信息并提交审核
@@ -122,8 +193,10 @@ jobs:
             构建信息: ${{ github.sha }}
             构建时间: $(date +'%Y-%m-%d %H:%M:%S')
           files: |
-            ./apk/app-debug.apk
-            ./aab/app-debug.aab
-          fail_on_unmatched_files: true
+            ./debug-apk/app-debug.apk
+            ./debug-aab/app-debug.aab
+            ./release-apk/app-release.apk
+            ./release-aab/app-release.aab
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

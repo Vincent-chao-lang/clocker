@@ -3,9 +3,37 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// 读取签名配置
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = if (keystorePropertiesFile.exists()) {
+    java.util.Properties().apply {
+        load(keystorePropertiesFile.inputStream())
+    }
+} else {
+    null
+}
+
 android {
     namespace = "com.clocker.clocker"
     compileSdk = 34
+
+    // 签名配置
+    signingConfigs {
+        create("release") {
+            // 优先从环境变量读取（用于 CI/CD），否则从 keystore.properties 读取
+            val keystorePath = System.getenv("KEYSTORE_FILE") ?: keystoreProperties?.getProperty("keystoreFile")
+            val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProperties?.getProperty("keystorePassword")
+            val keyAlias = System.getenv("KEY_ALIAS") ?: keystoreProperties?.getProperty("keyAlias")
+            val keyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProperties?.getProperty("keyPassword")
+
+            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                keyAlias = keyAlias
+                keyPassword = keyPassword
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.clocker.clocker"
@@ -22,6 +50,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 使用签名配置
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
