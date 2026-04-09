@@ -25,4 +25,6 @@
     <string name="no">否</string>
     <string name="scheduled_for_tomorrow">已调度为明天</string>
     <string name="snoozed_for_5min">5分钟后再次响铃</string>
+    <string name="enter_alarm_label">输入闹钟描述</string>
+    <string name="label_hint">输入描述（可选）</string>
 </resources>

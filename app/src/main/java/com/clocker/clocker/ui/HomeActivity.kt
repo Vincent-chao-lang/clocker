@@ -187,20 +187,51 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun showCustomTimePicker() {
-        val currentTime = Calendar.getInstance()
-        val hour = currentTime.get(Calendar.HOUR_OF_DAY)
-        val minute = currentTime.get(Calendar.MINUTE)
+        // 先弹出输入对话框让用户输入描述
+        showLabelInputDialog { label ->
+            // 然后显示时间选择器
+            val currentTime = Calendar.getInstance()
+            val hour = currentTime.get(Calendar.HOUR_OF_DAY)
+            val minute = currentTime.get(Calendar.MINUTE)
 
-        val picker = android.app.TimePickerDialog(
-            this,
-            { _, selectedHour, selectedMinute ->
-                addAlarm(selectedHour, selectedMinute, "自定义")
-            },
-            hour,
-            minute,
-            true // 24小时制
-        )
-        picker.show()
+            val picker = android.app.TimePickerDialog(
+                this,
+                { _, selectedHour, selectedMinute ->
+                    addAlarm(selectedHour, selectedMinute, label)
+                },
+                hour,
+                minute,
+                true // 24小时制
+            )
+            picker.show()
+        }
+    }
+
+    private fun showLabelInputDialog(callback: (String) -> Unit) {
+        // 创建输入框
+        val input = android.widget.EditText(this).apply {
+            hint = getString(R.string.label_hint)
+            setText("自定义")
+            maxLines = 1
+            maxLength = 10
+            textSize = 18f
+            setPadding(
+                dp(16).toInt(),
+                dp(12).toInt(),
+                dp(16).toInt(),
+                dp(12).toInt()
+            )
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.enter_alarm_label))
+            .setView(input)
+            .setPositiveButton(getString(R.string.confirm)) { _, _ ->
+                val label = input.text.toString().trim()
+                callback(label.ifEmpty { "自定义" })
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
     }
 
     private fun addAlarm(hour: Int, minute: Int, label: String) {
