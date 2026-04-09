@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Primary colors -->
+    <color name="blue_100">#FFE3F2FD</color>
+    <color name="blue_500">#FF2196F3</color>
+    <color name="blue_900">#FF0D47A1</color>
+
+    <!-- Secondary colors -->
+    <color name="amber_100">#FFFFF8E1</color>
+    <color name="amber_500">#FFFFC107</color>
+
+    <!-- Error colors -->
+    <color name="red_100">#FFFFEBEE</color>
+    <color name="red_500">#FFF44336</color>
+    <color name="red_900">#FFB71C1C</color>
+
+    <!-- Neutral colors -->
+    <color name="gray_100">#FFF5F5F5</color>
+    <color name="gray_200">#FFEEEEEE</color>
+    <color name="gray_800">#FF424242</color>
+    <color name="gray_900">#FF212121</color>
+</resources>

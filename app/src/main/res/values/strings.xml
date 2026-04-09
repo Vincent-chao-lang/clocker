@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Clocker</string>
+    <string name="title">Clocker</string>
+    <string name="subtitle">选择时间设置闹钟</string>
+    <string name="my_alarms">我的闹钟</string>
+    <string name="quick_add">快速添加</string>
+    <string name="other_time">其他时间</string>
+    <string name="no_alarms">暂无闹钟</string>
+    <string name="tap_card_to_add">点击下方卡片添加闹钟</string>
+    <string name="alarm_added">闹钟已添加</string>
+    <string name="alarm_enabled">闹钟已开启</string>
+    <string name="alarm_disabled">闹钟已关闭</string>
+    <string name="alarm_deleted">闹钟已删除</string>
+    <string name="delete_alarm">删除闹钟</string>
+    <string name="confirm_delete">确定要删除这个闹钟吗？</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    <string name="confirm">确定</string>
+    <string name="alarm_ringing">闹钟响了！</string>
+    <string name="stop">停止</string>
+    <string name="snooze">贪睡</string>
+</resources>

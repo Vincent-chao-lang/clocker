@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/blue_100"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <!-- 闹钟图标 -->
+    <ImageView
+        android:id="@+id/alarm_icon"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:src="@drawable/ic_alarm_on"
+        app:tint="@color/blue_500" />
+
+    <!-- 时间显示 -->
+    <TextView
+        android:id="@+id/time_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="00:00"
+        android:textColor="@color/gray_900"
+        android:textSize="96sp"
+        android:textStyle="bold" />
+
+    <!-- 提示文字 -->
+    <TextView
+        android:id="@+id/message_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/alarm_ringing"
+        android:textColor="@color/gray_900"
+        android:textSize="36sp"
+        android:alpha="0.8" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- 贪睡按钮 -->
+        <Button
+            android:id="@+id/btn_snooze"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="@string/snooze"
+            android:textSize="24sp"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_snooze"
+            app:iconGravity="textTop"
+            app:iconPadding="8dp" />
+
+        <!-- 停止按钮 -->
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="0dp"
+            android:layout_height="80dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:backgroundTint="@color/red_500"
+            android:text="@string/stop"
+            android:textColor="@color/white"
+            android:textSize="24sp"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_stop"
+            app:iconGravity="textTop"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white" />
+
+    </LinearLayout>
+
+</LinearLayout>
