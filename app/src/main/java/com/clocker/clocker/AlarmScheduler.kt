@@ -40,8 +40,8 @@ class AlarmScheduler(private val context: Context) {
             ).apply {
                 description = "闹钟提醒通知，使用声音和震动"
                 enableVibration(true)
-                setSound(null, null) // 使用默认声音
-                showBadge = true
+                setSound(null, null)
+                setShowBadge(true)
             }
 
             val notificationManager = context.getSystemService(NotificationManager::class.java)
