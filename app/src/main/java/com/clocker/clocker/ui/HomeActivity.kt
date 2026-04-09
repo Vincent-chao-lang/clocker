@@ -2,6 +2,7 @@ package com.clocker.clocker.ui
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.View
 import android.widget.Button
 import android.widget.CompoundButton
@@ -213,7 +214,7 @@ class HomeActivity : AppCompatActivity() {
             hint = getString(R.string.label_hint)
             setText("自定义")
             maxLines = 1
-            maxLength = 10
+            filters = arrayOf(InputFilter.LengthFilter(10))
             textSize = 18f
             setPadding(
                 dp(16).toInt(),
