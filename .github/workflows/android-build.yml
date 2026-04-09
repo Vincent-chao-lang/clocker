@@ -1,0 +1,105 @@
+name: Android CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: |
+          cd clocker
+          chmod +x gradlew || echo "No gradlew yet"
+
+      - name: Build Android APK
+        run: |
+          cd clocker
+          gradle assembleDebug || gradle build || ./gradlew assembleDebug
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug
+          path: clocker/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+  release:
+    name: Create Release
+    needs: build-android
+    # 只在main分支的push事件中创建Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-debug
+          path: ./apk
+
+      - name: Generate version tag
+        id: version
+        run: |
+          VERSION_TAG="v1.0.0-android-$(date +'%Y%m%d-%H%M%S')"
+          echo "tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "version_name=Clocker v1.0.0 Android Build $(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.version_name }}
+          body: |
+            ## Clocker - 极简闹钟应用（原生 Android 版）
+
+            一款专为老年人设计的极简闹钟应用，最多2步即可完成闹钟设置。
+
+            ### 技术栈
+            - **原生 Android (Kotlin)**: 直接使用 AlarmManager
+            - **Material Design 3**: 现代化 UI 设计
+            - **Gson**: 数据持久化
+
+            ### 功能特点
+            - **6个预设时间卡片**: 常用时间一键设置
+            - **自定义时间**: 支持选择任意时间
+            - **极简交互**: 点击卡片 → 完成
+            - **全屏响铃**: 大号时钟界面
+            - **老年人友好**: 大字体、高对比度、大按钮
+
+            ### 下载
+            - **Android APK**: 从下方 Assets 下载 `app-debug.apk`
+
+            ### 安装说明
+            1. 下载 APK 文件
+            2. 在 Android 设备上安装
+            3. 授予闹钟权限
+            4. 开始使用!
+
+            ---
+            构建信息: ${{ github.sha }}
+            构建时间: $(date +'%Y-%m-%d %H:%M:%S')
+          files: ./apk/app-debug.apk
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
