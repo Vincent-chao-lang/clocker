@@ -20,7 +20,7 @@
     <string name="alarm_ringing">闹钟响了！</string>
     <string name="stop">停止</string>
     <string name="snooze">等会</string>
-    <string name="confirm_schedule_tomorrow">是否调度为明天同一时间？</string>
+    <string name="confirm_schedule_tomorrow">明天还这个点？</string>
     <string name="yes">是</string>
     <string name="no">否</string>
     <string name="scheduled_for_tomorrow">已调度为明天</string>
